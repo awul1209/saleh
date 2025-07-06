@@ -5,6 +5,43 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
 <?php
+// --- LOGIKA BARU: PROSES IMPOR DARI EXCEL ---
+if (isset($_POST['importKaryawan'])) {
+    $file_mimes = ['application/octet-stream', 'application/vnd.ms-excel', 'application/x-csv', 'text/x-csv', 'text/csv', 'application/csv', 'application/excel', 'application/vnd.msexcel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+
+    if(isset($_FILES['file_excel']['name']) && in_array($_FILES['file_excel']['type'], $file_mimes)) {
+        $arr_file = explode('.', $_FILES['file_excel']['name']);
+        $extension = end($arr_file);
+
+        if('csv' == $extension) {
+            $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+        } else {
+            $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+        }
+
+        $spreadsheet = $reader->load($_FILES['file_excel']['tmp_name']);
+        $sheetData = $spreadsheet->getActiveSheet()->toArray();
+
+        // Mulai dari baris ke-2 untuk melewati header
+        for($i = 1; $i < count($sheetData); $i++) {
+            $nik = mysqli_real_escape_string($config, $sheetData[$i]['0']);
+            $nama = mysqli_real_escape_string($config, $sheetData[$i]['1']);
+            $jabatan = mysqli_real_escape_string($config, $sheetData[$i]['2']);
+            $tanggal_masuk = mysqli_real_escape_string($config, $sheetData[$i]['3']);
+            $bidang_id = (int)$sheetData[$i]['4'];
+            $bagian = mysqli_real_escape_string($config, $sheetData[$i]['5']);
+            
+            // Cek jika NIK sudah ada untuk mencegah duplikasi
+            $cek_nik = mysqli_query($config, "SELECT nik FROM karyawan WHERE nik='$nik'");
+            if(mysqli_num_rows($cek_nik) == 0) {
+                mysqli_query($config, "INSERT INTO karyawan (nik, nama_karyawan, jabatan, tanggal_masuk, bidang_id, bagian) VALUES ('$nik', '$nama', '$jabatan', '$tanggal_masuk', '$bidang_id', '$bagian')");
+            }
+        }
+        echo "<script>alert('Impor data berhasil!');window.location.href='?page=karyawan';</script>";
+    } else {
+        echo "<script>alert('Gagal! Format file tidak didukung. Harap unggah file Excel (.xlsx atau .csv).');</script>";
+    }
+}
 if (isset($_POST['tambahKaryawan'])) {
 
 $nik = mysqli_real_escape_string($config, $_POST['nik']);
@@ -143,10 +180,17 @@ $getalldata = mysqli_query($config, $query);
 <div class="container-fluid px-4">
     <h1 class="mt-4">Data Karyawan</h1>
     <hr>
-    
-    <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#tambahModal">
-        <i class="fas fa-plus"></i> Tambah Karyawan
-    </button>
+        <!-- Tombol Aksi -->
+    <div class="mb-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahModal">
+            <i class="fas fa-plus"></i> Tambah Karyawan
+        </button>
+        <!-- TOMBOL BARU UNTUK IMPOR -->
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="fas fa-file-excel"></i> Impor dari Excel
+        </button>
+    </div>
+
 
     <!-- ====================================================== -->
     <!-- === BARU: FORM PENCARIAN & FILTER === -->
@@ -346,6 +390,39 @@ $getalldata = mysqli_query($config, $query);
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary" name="tambahKaryawan">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================== -->
+<!-- === MODAL BARU UNTUK FITUR IMPOR EXCEL === -->
+<!-- ====================================================== -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Impor Data Karyawan dari Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Petunjuk:</strong><br>
+                        1. Siapkan file Excel (.xlsx atau .csv) Anda.<br>
+                        2. Pastikan urutan kolom adalah: `nik`, `nama_karyawan`, `jabatan`, `tanggal_masuk`, `bidang_id`, `bagian`.<br>
+                        3. Baris pertama (header) akan diabaikan.<br>
+                        4. Sistem akan otomatis melewati data dengan NIK yang sudah ada di database.
+                    </div>
+                    <div class="mb-3">
+                        <label for="file_excel" class="form-label">Pilih File Excel</label>
+                        <input type="file" name="file_excel" id="file_excel" class="form-control" required accept=".xlsx, .csv">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success" name="importKaryawan">Mulai Impor</button>
                 </div>
             </form>
         </div>

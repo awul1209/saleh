@@ -26,16 +26,16 @@
         <li class="nav-item">
 <a class="nav-link collapsed d-flex align-items-center" href="#" data-bs-toggle="collapse" data-bs-target="#collapseBidang">
     <i class="fas fa-fw fa-briefcase"></i>
-    <span class="flex-grow-1">Data Lowongan Bidang</span>
+    <span class="flex-grow-1">Data Bobot</span>
     <i class="fas fa-fw fa-angle-down"></i>
 </a>
             <div id="collapseBidang" class="collapse" data-bs-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <h6 class="collapse-header">Master Data:</h6>
-                    <a class="collapse-item" href="?page=bidang">Kelola Semua Bidang</a>
+                    <!-- <a class="collapse-item" href="?page=bidang">Kelola Semua Bidang</a> -->
                     <a class="collapse-item" href="?page=standar-bidang">Kelola Bobot</a>
                     <div class="collapse-divider"></div>
-                    <h6 class="collapse-header">Bidang Tersedia:</h6>
+                    <!-- <h6 class="collapse-header">Bidang Tersedia:</h6>
                     <?php
                     // Ambil semua bidang utama (induk)
                     $query_induk = mysqli_query($config, "SELECT * FROM bidang WHERE parent_id = 0 ORDER BY nama_bidang ASC");
@@ -70,7 +70,7 @@
                     <?php
                         }
                     }
-                    ?>
+                    ?> -->
                 </div>
             </div>
         </li>
@@ -88,9 +88,9 @@
  <li class="nav-item active">
             <a class="nav-link" href="?page=home-admin"><i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span></a>
         </li>
-         <li class="nav-item">
+         <!-- <li class="nav-item">
             <a class="nav-link" href="?page=admin"><i class="fas fa-home"></i><span>Data Admin</span></a>
-        </li>
+        </li> -->
         <li class="nav-item">
 <a class="nav-link collapsed d-flex align-items-center" href="#" data-bs-toggle="collapse" data-bs-target="#collapseBidang">
     <i class="fas fa-fw fa-briefcase"></i>
@@ -143,8 +143,8 @@
             </div>
         </li>
         <hr class="sidebar-divider">
-         <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:5000" target="_blank"><i class="fas fa-calculator"></i><span>Perhitungan</span></a>
+ <li class="nav-item">
+            <a class="nav-link" href="?page=hasil"><i class="fa fa-address-book"></i><span>Hasil Perhitungan</span></a>
         </li>
         <?php } ?>
     

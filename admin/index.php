@@ -1,5 +1,6 @@
 <?php
 require '../config.php';
+require '../vendor/autoload.php';
 session_start();
 
 // Cek apakah user sudah login

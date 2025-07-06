@@ -26,14 +26,10 @@ def load_profil_dan_bobot_by_bidang(bidang_id):
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
-            # Load Profil Ideal dengan normalisasi
             cursor.execute("SELECT kriteria, nilai FROM profil_ideal WHERE bidang_id = %s", (bidang_id,))
             profil_ideal = {row['kriteria'].lower().strip().replace(' ', '_'): int(row['nilai']) for row in cursor.fetchall()}
-            
-            # Load Bobot Kriteria dengan normalisasi
             cursor.execute("SELECT kriteria, bobot FROM bobot_kriteria WHERE bidang_id = %s", (bidang_id,))
             bobot_kriteria = {row['kriteria'].lower().strip().replace(' ', '_'): float(row['bobot']) for row in cursor.fetchall()}
-            
             return profil_ideal, bobot_kriteria
     except Exception as e:
         print(f"Error saat memuat profil dan bobot: {e}")
@@ -43,29 +39,53 @@ def load_profil_dan_bobot_by_bidang(bidang_id):
             conn.close()
 
 def konversi_gap_ke_skor(gap):
-    gap_map = { 0: 5.0, 1: 4.5, -1: 4.0, 2: 3.5, -2: 3.0, 3: 2.5, -3: 2.0, 4: 1.5, -4: 1.0 }
+    # Menggunakan tabel konversi yang membedakan selisih positif dan negatif
+    gap_map = {
+        0: 5.0,  # Sesuai
+        1: 4.5,  # Kelebihan 1
+       -1: 4.0, # Kekurangan 1
+        2: 3.5,  # Kelebihan 2
+       -2: 3.0, # Kekurangan 2
+        3: 2.5,  # Kelebihan 3
+       -3: 2.0, # Kekurangan 3
+        4: 1.5,  # Kelebihan 4
+       -4: 1.0  # Kekurangan 4
+    }
     return gap_map.get(gap, 1.0)
 
+# ====================================================================
+# === FUNGSI PERHITUNGAN DIPERBAIKI SESUAI PERMINTAAN ANDA ===
+# ====================================================================
 def calculate_single_candidate_score(candidate_data, profil_ideal, bobot_kriteria):
-    total_weighted_score = 0
-    total_bobot = 0
+    skor_akhir_total = 0.0
     penjelasan_skor = []
-    
+
+    # Iterasi hanya pada kriteria yang relevan untuk bidang tersebut
     for kriteria, ideal_value in profil_ideal.items():
         if kriteria in candidate_data and kriteria in bobot_kriteria:
-            kandidat_value = candidate_data[kriteria]
+            kandidat_value = candidate_data.get(kriteria, 0)
             bobot = bobot_kriteria[kriteria]
+            
             gap = kandidat_value - ideal_value
-            skor_gap = konversi_gap_ke_skor(gap)
-            weighted_score = skor_gap * bobot
-            total_weighted_score += weighted_score
-            total_bobot += bobot
-            penjelasan_skor.append(f"{kriteria.replace('_', ' ').title()}: GAP {gap}, Skor Konversi {skor_gap:.2f}, Bobot {bobot:.2f}, Skor Terbobot {weighted_score:.2f}")
+            skor_konversi = konversi_gap_ke_skor(gap)
+            
+            # Langkah 1: Normalisasi skor per kriteria (hasilnya antara 0 - 1)
+            skor_normalisasi_per_kriteria = skor_konversi / 5.0
+            
+            # Langkah 2: Kalikan dengan bobot kriteria
+            hasil_kali_bobot = skor_normalisasi_per_kriteria * bobot
+            
+            # Langkah 3: Jumlahkan semua hasil
+            skor_akhir_total += hasil_kali_bobot
+
+            penjelasan_skor.append(f"{kriteria.replace('_', ' ').title()}: Skor Normalisasi {skor_normalisasi_per_kriteria:.2f}, Bobot {bobot:.2f}, Hasil {hasil_kali_bobot:.2f}")
     
-    max_possible_score = 5.0 * total_bobot if total_bobot > 0 else 0
-    if max_possible_score == 0: return 0.00, penjelasan_skor
-    final_score = (total_weighted_score / max_possible_score) * 100
-    return round(final_score, 2), penjelasan_skor
+    # Langkah 4: Ubah ke format persentase dan bulatkan
+    final_score_percent = skor_akhir_total * 100
+    rounded_score = int(final_score_percent + 0.5)
+    
+    return rounded_score, penjelasan_skor
+
 
 # --- RUTE-RUTE APLIKASI ---
 
